@@ -2,14 +2,14 @@ const jwt = require('jsonwebtoken');
 
 const SECRET = 'clave-secreta-desarrollo'; // en producción va en .env
 
-function verificarToken(req, res, next) {
+function CheckToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   
   if (!authHeader) {
     return res.status(401).json({ error: 'Token requerido' });
   }
 
-  // El header viene así: "Bearer eyJhbG..."
+
   const token = authHeader.split(' ')[1];
 
   if (!token) {
@@ -25,4 +25,4 @@ function verificarToken(req, res, next) {
   }
 }
 
-module.exports = { verificarToken, SECRET };
+module.exports = { CheckToken, SECRET };
