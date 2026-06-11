@@ -5,6 +5,7 @@ const usuariosRouter = require('./routes/usuarios.routes');
 const authRouter = require('./routes/auth.routes');
 const cursosRouter = require('./routes/cursos.routes')
 const { errorHandler } = require('./middleware/error.middleware');
+const { PORT } = require('./config/env');
 
 const app = express();
 
@@ -26,6 +27,6 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 
-app.listen(3000, () => {
-  console.log('Servidor Express corriendo en http://localhost:3000');
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
 });

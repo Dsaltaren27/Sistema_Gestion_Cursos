@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../config/env');
 
-const SECRET = 'clave-secreta-desarrollo'; // en producción va en .env
+
 
 function CheckToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -17,7 +18,7 @@ function CheckToken(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, SECRET);
+    const payload = jwt.verify(token, JWT_SECRET);
     req.usuario = payload; // disponible en el controller
     next();
   } catch (error) {
@@ -25,4 +26,4 @@ function CheckToken(req, res, next) {
   }
 }
 
-module.exports = { CheckToken, SECRET };
+module.exports = { CheckToken };

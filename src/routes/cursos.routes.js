@@ -8,6 +8,6 @@ router.get('/', CheckToken, getCursos);
 router.get('/:id', CheckToken, getCursoById);
 router.post('/', CheckToken, validateCurso, createCurso);
 router.put('/:id', CheckToken, validateCurso, updateCurso);
-router.delete('/:id', CheckToken, validateCurso, removeCurso);
+router.delete('/:id', CheckToken, removeCurso);
 
 module.exports = router;

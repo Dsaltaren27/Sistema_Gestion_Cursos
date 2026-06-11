@@ -1,4 +1,5 @@
 node_modules/
+.env
 bin/
 *.log
 .DS_Store
@@ -7,3 +8,4 @@ bin/
 .vscode/
 coverage/
 *.tsbuildinfo
+

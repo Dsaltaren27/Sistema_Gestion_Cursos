@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { SECRET } = require('../middleware/auth.middleware');
+const { JWT_SECRET } = require('../config/env');
 const userRepo = require('../repositories/usuarios.repository');
 const { AppError } = require('../errors/AppError');
 
@@ -14,7 +14,7 @@ async function login(req, res, next) {
         const verifyPassword = await bcrypt.compare(password, user.password);
         if (!verifyPassword) throw new AppError('Credenciales inválidas', 401);
 
-        const token = jwt.sign({ id: user.id, email: user.email, nombre: user.nombre }, SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, email: user.email, nombre: user.nombre }, JWT_SECRET, { expiresIn: '1h' });
         res.json({ token, usuario: { id: user.id, nombre: user.nombre, email: user.email } });
 
     }
@@ -33,7 +33,7 @@ async function register(req, res, next) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = await userRepo.create(nombre, email, hashedPassword);
-        const token = jwt.sign({ id: newUser.id }, SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newUser.id, email:newUser.email, nombre:newUser.nombre }, JWT_SECRET, { expiresIn: '1h' });
         res.status(201).json({ usuario: newUser, token });
 
 
