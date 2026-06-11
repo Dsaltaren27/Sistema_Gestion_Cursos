@@ -65,12 +65,8 @@ async function updateCurso(req, res, next) {
 async function removeCurso(req, res, next) {
     try {
         const curso = await cursoRepo.findById(Number(req.params.id))
-
         if (!curso) throw new AppError('curso no encontrado', 404)
-
-
         const cursoRemove = await cursoRepo.remove(Number(req.params.id));
-
         res.json({ curso: cursoRemove });
 
     }
