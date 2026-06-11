@@ -24,32 +24,6 @@ function CheckToken(req, res, next) {
   }
 }
 
-function validateLogin(req, res, next) {
 
-  const { error } = loginSchema.validate(req.body);
 
-  if (error) {
-    return res.status(400).json({
-      error: error.details[0].message
-    });
-  }
-
-  next();
-
-}
-
-function validateRegister(req, res, next) {
-
-  const { error } = registerSchema.validate(req.body);
-
-  if (error) {
-    return res.status(400).json({
-      error: error.details[0].message
-    });
-  }
-
-  next();
-
-}
-
-module.exports = { CheckToken, validateLogin, validateRegister };
+module.exports = { CheckToken };

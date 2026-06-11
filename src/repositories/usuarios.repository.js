@@ -2,14 +2,14 @@ const { pool } = require('../config/db');
 
 async function findAll() {
   const result = await pool.query(
-    'SELECT id, nombre, email, created_at FROM usuarios'
+    'SELECT id, nombre, email, rol, created_at FROM usuarios'
   );
   return result.rows;
 }
 
 async function findById(id) {
   const result = await pool.query(
-    'SELECT id, nombre, email, created_at FROM usuarios WHERE id = $1',
+    'SELECT id, nombre, email,rol, created_at FROM usuarios WHERE id = $1',
     [id]
   );
   return result.rows[0]; 
@@ -23,12 +23,12 @@ async function findByEmail(email) {
   return result.rows[0];
 }
 
-async function create(nombre, email, password) {
+async function create(nombre, email, rol, password) {
   const result = await pool.query(
-    `INSERT INTO usuarios (nombre, email, password) 
-     VALUES ($1, $2, $3) 
-     RETURNING id, nombre, email, created_at`,
-    [nombre, email, password]
+    `INSERT INTO usuarios (nombre, email, rol,password) 
+     VALUES ($1, $2, $3,$4) 
+     RETURNING id, nombre, email, rol, created_at`,
+    [nombre, email, rol, password]
   );
   return result.rows[0];
 }

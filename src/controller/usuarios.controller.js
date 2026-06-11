@@ -23,10 +23,10 @@ async function getUserById(req, res, next) {
 
 async function createUser(req, res, next) {
     try {
-        const { nombre, email, password } = req.body;
+        const { nombre, email,rol, password } = req.body;
         const exist = await userRepo.findByEmail(email);
         if (exist) throw new AppError('El email ya está registrado', 409);
-        const newuser = await userRepo.create(nombre, email, password);
+        const newuser = await userRepo.create(nombre, email,rol, password);
         res.status(201).json({ usuario: newuser });
     } catch (error) {
         next(error);

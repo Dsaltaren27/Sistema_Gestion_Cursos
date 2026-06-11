@@ -21,6 +21,14 @@ const registerSchema = Joi.object({
 
     password: Joi.string()
         .min(6)
+        .required(),
+
+    rol: Joi.string()
+        .valid(
+            'admin',
+            'profesor',
+            'estudiante'
+        )
         .required()
 });
 

@@ -16,6 +16,36 @@ function CheckUser(req, res, next) {
   next();
 }
 
+function validateLogin(req, res, next) {
+
+  const { error } = loginSchema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({
+      error: error.details[0].message
+    });
+  }
+
+  next();
+
+}
+
+function validateRegister(req, res, next) {
+
+  const { error } = registerSchema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({
+      error: error.details[0].message
+    });
+  }
+
+  next();
+
+}
+
+
+
 function validateCurso(req, res, next) {
   const { error, value } = cursoSchema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -43,4 +73,4 @@ next();
 
 }
 
-module.exports = { CheckUser, validateCurso,validateInscripcion };
+module.exports = { CheckUser, validateCurso,validateInscripcion, validateLogin, validateRegister };
