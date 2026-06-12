@@ -18,7 +18,6 @@ async function getCursoById(req, res, next) {
 
         if (!curso) throw new AppError('curso no encontrado', 404)
         res.json({ curso })
-
     }
     catch (error) {
 
@@ -32,10 +31,8 @@ async function createCurso(req, res, next) {
 
         const newCurso = await cursoRepo.create(nombre, descripcion, profesor_id);
         res.status(201).json({ curso: newCurso });
-
     }
     catch (error) {
-
         next(error)
     }
 
@@ -48,15 +45,11 @@ async function updateCurso(req, res, next) {
         if (!curso) throw new AppError('curso no encontrado', 404)
 
         const { nombre, descripcion, profesor_id } = req.body;
-
-
         const cursoUpdate = await cursoRepo.update(Number(req.params.id), nombre, descripcion, profesor_id);
-
         res.json({ curso: cursoUpdate });
 
     }
     catch (error) {
-
         next(error)
     }
 

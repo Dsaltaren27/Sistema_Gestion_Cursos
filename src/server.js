@@ -14,14 +14,12 @@ app.use(cors({ origin: 'http://localhost:4200' }));
 app.use(express.json()); 
 
 
-// Rutas públicas
 app.use('/auth',authRouter);
 app.use('/usuarios', usuariosRouter);
 app.use('/cursos', cursosRouter);
 app.use('/inscripciones', inscripcionesRouter);
 
 
-// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });

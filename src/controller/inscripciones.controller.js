@@ -49,4 +49,4 @@ async function removeInscripcion(req, res, next) {
 
 }
 
-module.exports= {getInscripciones,getInscripcionById,createInscripcion,removeInscripcion};
+module.exports = { getInscripciones, getInscripcionById, createInscripcion, removeInscripcion };

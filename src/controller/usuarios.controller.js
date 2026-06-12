@@ -26,13 +26,13 @@ async function getUserById(req, res, next) {
 
 async function createUser(req, res, next) {
     try {
-        const { nombre, email,rol, password } = req.body;
+        const { nombre, email, rol, password } = req.body;
         const exist = await userRepo.findByEmail(email);
         if (exist) throw new AppError('El email ya está registrado', 409);
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await userRepo.create(nombre, email,rol, password);
-        const token = jwt.sign({ id: newUser.id, email:newUser.email, nombre:newUser.nombre, rol:newUser.rol  }, JWT_SECRET, { expiresIn: '1h' });
+        const newUser = await userRepo.create(nombre, email, rol, password);
+        const token = jwt.sign({ id: newUser.id, email: newUser.email, nombre: newUser.nombre, rol: newUser.rol }, JWT_SECRET, { expiresIn: '1h' });
         res.status(201).json({ usuario: newUser, token });
     } catch (error) {
         next(error);

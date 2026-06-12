@@ -6,7 +6,7 @@ const { AppError } = require('../errors/AppError');
 
 async function login(req, res, next) {
     try {
-        const { email, password} = req.body;
+        const { email, password } = req.body;
         const user = await userRepo.findByEmail(email);
 
         if (!user) throw new AppError('Credenciales inválidas', 401);
@@ -14,8 +14,8 @@ async function login(req, res, next) {
         const verifyPassword = await bcrypt.compare(password, user.password);
         if (!verifyPassword) throw new AppError('Credenciales inválidas', 401);
 
-        const token = jwt.sign({ id: user.id, email: user.email, nombre: user.nombre,rol: user.rol }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, usuario: { id: user.id, nombre: user.nombre, email: user.email ,rol: user.rol } });
+        const token = jwt.sign({ id: user.id, email: user.email, nombre: user.nombre, rol: user.rol }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token, usuario: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol } });
 
     }
     catch (error) {
@@ -25,15 +25,15 @@ async function login(req, res, next) {
 
 async function register(req, res, next) {
     try {
-        const { nombre,email,password,rol } = req.body;  
+        const { nombre, email, password, rol } = req.body;
         const exist = await userRepo.findByEmail(email);
 
-        if (exist) throw new AppError('El email ya está registrado',409 );
-        
+        if (exist) throw new AppError('El email ya está registrado', 409);
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUser = await userRepo.create(nombre, email, rol,hashedPassword);
-        const token = jwt.sign({ id: newUser.id, email:newUser.email, nombre:newUser.nombre, rol:newUser.rol  }, JWT_SECRET, { expiresIn: '1h' });
+        const newUser = await userRepo.create(nombre, email, rol, hashedPassword);
+        const token = jwt.sign({ id: newUser.id, email: newUser.email, nombre: newUser.nombre, rol: newUser.rol }, JWT_SECRET, { expiresIn: '1h' });
         res.status(201).json({ usuario: newUser, token });
 
 
