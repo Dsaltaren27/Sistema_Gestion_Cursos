@@ -23,6 +23,7 @@ pool.connect((err, client, release) => {
     console.error('Error conectando a PostgreSQL:', err.message);
   } else {
     console.log('PostgreSQL conectado correctamente');
+    console.log('DB:', process.env.DB_DATABASE);
     release();
   }
 });

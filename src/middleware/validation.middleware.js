@@ -1,6 +1,9 @@
 const Joi = require('joi');
 const { usuarioSchema } = require('../schemas/usuario.schema');
 const { cursoSchema } = require('../schemas/curso.schema');
+const { loginSchema } = require('../schemas/login.schema');
+const { registerSchema } = require('../schemas/login.schema');
+const { inscripcionSchema } = require('../schemas/inscripciones.schema');
 const { AppError } = require('../errors/AppError');
 
 function CheckUser(req, res, next) {

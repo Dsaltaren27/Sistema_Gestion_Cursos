@@ -23,8 +23,12 @@ async function getInscripcionById(req, res, next) {
 async function createInscripcion(req, res, next) {
     try {
         const { usuario_id, curso_id } = req.body;
+        const existing = await inscripRepo.findByUsuarioCurso(usuario_id, curso_id);
+        if (existing) {
+            throw new AppError('El usuario ya está inscrito en este curso', 409);
+        }
         const newInscripcion = await inscripRepo.create(usuario_id, curso_id);
-        res.status(201).json({ inscripcion: newIncripcion });
+        res.status(201).json({ inscripcion: newInscripcion });
     } catch (error) {
         next(error);
     }
