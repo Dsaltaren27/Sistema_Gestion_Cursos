@@ -1,4 +1,7 @@
 const { AppError } = require('../errors/AppError');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../config/env');
 const userRepo = require('../repositories/usuarios.repository');
 
 async function getUser(req, res, next) {
@@ -26,8 +29,11 @@ async function createUser(req, res, next) {
         const { nombre, email,rol, password } = req.body;
         const exist = await userRepo.findByEmail(email);
         if (exist) throw new AppError('El email ya está registrado', 409);
-        const newuser = await userRepo.create(nombre, email,rol, password);
-        res.status(201).json({ usuario: newuser });
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await userRepo.create(nombre, email,rol, password);
+        const token = jwt.sign({ id: newUser.id, email:newUser.email, nombre:newUser.nombre, rol:newUser.rol  }, JWT_SECRET, { expiresIn: '1h' });
+        res.status(201).json({ usuario: newUser, token });
     } catch (error) {
         next(error);
     }

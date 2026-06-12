@@ -14,6 +14,18 @@ async function findById(id) {
   );
   return result.rows[0]; 
 }
+async function findByUsuarioCurso(usuario_id, curso_id) {
+
+  const result = await pool.query(
+    `SELECT *
+     FROM inscripciones
+     WHERE usuario_id = $1
+     AND curso_id = $2`,
+    [usuario_id, curso_id]
+  );
+
+  return result.rows[0];
+}
 
 
 async function create(usuario_id, curso_id) {
@@ -55,4 +67,4 @@ async function findByCurso(curso_id) {
 }
 
 
-module.exports = { findAll, findById, create,remove, findByUsuario,findByCurso };
+module.exports = { findAll, findById, create,remove, findByUsuario,findByCurso, findByUsuarioCurso };
