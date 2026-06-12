@@ -2,14 +2,14 @@ const { pool } = require('../config/db');
 
 async function findAll() {
   const result = await pool.query(
-    'SELECT id, nombre, descripcion, profesor_id FROM cursos'
+    'SELECT c.id, c.nombre AS curso_nombre, c.descripcion, u.nombre AS profesor_id FROM cursos c JOIN usuarios u ON u.id = c.profesor_id'
   );
   return result.rows;
 }
 
 async function findById(id) {
   const result = await pool.query(
-    'SELECT id, nombre, descripcion, profesor_id  FROM cursos WHERE id = $1',
+    'SELECT c.id, c.nombre AS curso_nombre, c.descripcion, u.nombre AS profesor_id  FROM cursos c JOIN usuarios u ON u.id = c.profesor_id WHERE id = $1',
     [id]
   );
   return result.rows[0]; 

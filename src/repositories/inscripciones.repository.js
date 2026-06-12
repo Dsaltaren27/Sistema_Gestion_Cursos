@@ -2,14 +2,14 @@ const { pool } = require('../config/db');
 
 async function findAll() {
   const result = await pool.query(
-    'SELECT id, usuario_id, curso_id FROM inscripciones'
+    'SELECT i.id, u.nombre AS usuario_nombre, c.nombre AS curso_nombre FROM inscripciones i JOIN usuarios u ON u.id= i.usuario_id JOIN cursos c ON c.id = i.curso_id'
   );
   return result.rows;
 }
 
 async function findById(id) {
   const result = await pool.query(
-    'SELECT id, usuario_id, curso_id FROM inscripciones WHERE id = $1',
+    'SELECT i.id,u.nombre AS usuario_nombre, c.nombre AS curso_nombre FROM inscripciones i JOIN usuarios u ON u.id= i.usuario_id JOIN cursos c ON c.id = i.curso_id WHERE i.id = $1',
     [id]
   );
   return result.rows[0]; 
@@ -54,12 +54,5 @@ async function findByCurso(curso_id) {
   return result.rows; 
 }
 
-async function findByUsuarioCurso(usuario_id, curso_id) {
-  const result = await pool.query(
-    'SELECT * FROM inscripciones WHERE usuario_id = $1 AND curso_id = $2',
-    [usuario_id, curso_id]
-  );
-  return result.rows[0];
-}
 
-module.exports = { findAll, findById, create, remove, findByUsuario, findByCurso, findByUsuarioCurso };
+module.exports = { findAll, findById, create,remove, findByUsuario,findByCurso };
