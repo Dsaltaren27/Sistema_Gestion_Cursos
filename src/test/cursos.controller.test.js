@@ -38,7 +38,7 @@ describe('getUserById', () => {
 
         const errorRecibido = next.mock.calls[0][0];
         expect(errorRecibido.statusCode).toBe(404);
-        expect(errorRecibido.message).toBe('curso no encontrado');
+        expect(errorRecibido.message).toBe('Curso no encontrado');
     });
 
 });
