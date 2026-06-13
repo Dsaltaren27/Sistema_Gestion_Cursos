@@ -1,16 +1,13 @@
-jest.mock('../config/db', () => ({
-  pool: {
-    query: jest.fn(),
-    connect: jest.fn((cb) => cb(null, {}, () => {}))
-  }
-}));
-
 const { getUserById } = require('../controller/usuarios.controller');
 const userRepo = require('../repositories/usuarios.repository');
 
 jest.mock('../repositories/usuarios.repository');
 
 describe('getUserById', () => {
+
+        beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
   test('retorna 200 y el usuario cuando existe', async () => {
     userRepo.findById.mockResolvedValue({ id: 1, nombre: 'Ana', email: 'ana@gmail.com' });
@@ -21,6 +18,7 @@ describe('getUserById', () => {
 
     await getUserById(req, res, next);
 
+    expect(userRepo.findById).toHaveBeenCalledWith(1);
     expect(res.json).toHaveBeenCalledWith({
       usuario: { id: 1, nombre: 'Ana', email: 'ana@gmail.com' }
     });
@@ -36,7 +34,9 @@ describe('getUserById', () => {
 
     await getUserById(req, res, next);
 
-    expect(next).toHaveBeenCalled();
+  
+    expect(next).toHaveBeenCalledTimes(1);
+    
     const errorRecibido = next.mock.calls[0][0];
     expect(errorRecibido.statusCode).toBe(404);
     expect(errorRecibido.message).toBe('Usuario no encontrado');

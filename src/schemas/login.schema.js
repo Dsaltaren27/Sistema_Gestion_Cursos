@@ -12,15 +12,21 @@ const loginSchema = Joi.object({
 
 const registerSchema = Joi.object({
     nombre: Joi.string()
+        .trim()
         .min(3)
+        .max(100)
         .required(),
 
     email: Joi.string()
+        .trim()
+        .lowercase()
         .email()
         .required(),
 
     password: Joi.string()
+        .trim()
         .min(6)
+        .max(50)
         .required(),
 
     rol: Joi.string()

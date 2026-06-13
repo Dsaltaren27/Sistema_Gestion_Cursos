@@ -3,6 +3,7 @@ const Joi = require('joi');
 const cursoSchema = Joi.object({
     nombre: Joi.string()
         .min(3)
+        .max(100)
         .required(),
 
     descripcion: Joi.string()

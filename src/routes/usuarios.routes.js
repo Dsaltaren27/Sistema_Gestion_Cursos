@@ -7,8 +7,8 @@ const {CheckRole} = require('../middleware/roles.middleware')
 const { ROLES } = require('../utils/constants');
 
 
-router.get('/', CheckToken, getUser);
+router.get('/', CheckToken, CheckRole(ROLES.ADMIN), getUser);
 router.get('/:id', CheckToken, getUserById);
-router.post('/', CheckToken,CheckUser, CheckRole(ROLES.ADMIN), createUser)
+router.post('/', CheckToken,CheckRole(ROLES.ADMIN),CheckUser, createUser)
 
 module.exports = router;
