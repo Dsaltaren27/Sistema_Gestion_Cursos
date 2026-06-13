@@ -1,27 +1,27 @@
 # 📚 Sistema de Gestión de Cursos
 
-Una API REST robusta para la gestión integral de cursos, usuarios e inscripciones. Desarrollada con Node.js y Express, esta solución proporciona autenticación segura, control de roles y validación de datos completa.
+Una API REST para la gestión de cursos, usuarios e inscripciones. Desarrollada con Node.js y Express, esta solución incluye autenticación JWT, control de roles y validación de datos.
 
 ## 🚀 Características
 
-- ✅ **Autenticación segura** con JWT (JSON Web Tokens)
-- ✅ **Gestión de roles y permisos** (Admin, Instructor, Estudiante)
-- ✅ **CRUD completo** para usuarios, cursos e inscripciones
-- ✅ **Validación robusta** de datos con Joi y Zod
-- ✅ **Encriptación de contraseñas** con bcryptjs
-- ✅ **Base de datos PostgreSQL** para persistencia confiable
-- ✅ **Manejo centralizado de errores**
-- ✅ **CORS configurado** para integración con aplicaciones frontend
-- ✅ **Arquitectura escalable** con separación de capas
+- ✅ Autenticación segura con JWT
+- ✅ Control de roles y permisos (admin, profesor, estudiante)
+- ✅ CRUD para usuarios, cursos e inscripciones
+- ✅ Validaciones con Joi y Zod
+- ✅ Contraseñas cifradas con bcryptjs
+- ✅ Persistencia con PostgreSQL
+- ✅ Manejo de errores centralizado
+- ✅ Soporte para ejecución con Docker
 
 ## 📋 Requisitos Previos
 
 Antes de comenzar, asegúrate de tener instalado:
 
-- **Node.js** (v14 o superior)
-- **npm** o **yarn**
-- **PostgreSQL** (v12 o superior)
-- **Git**
+- Node.js (v14 o superior)
+- npm
+- PostgreSQL
+- Git
+- Docker y Docker Compose (opcional)
 
 ## 🔧 Instalación
 
@@ -40,52 +40,49 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto:
+Crea un archivo `.env` en la raíz del proyecto con estas variables:
 
 ```env
-# Base de datos
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=tu_usuario
-DB_PASSWORD=tu_contraseña
-DB_NAME=sistema_cursos
-
-# Servidor
+DB_DATABASE=gestion_escolar
+DB_USER=postgres
+DB_PASSWORD=root
 PORT=3000
-NODE_ENV=development
-
-# JWT
-JWT_SECRET=tu_clave_secreta_super_segura
-JWT_EXPIRE=7d
+JWT_SECRET=tu_clave_secreta
 ```
 
-### 4. Configurar la base de datos
+> Nota: este proyecto usa `DB_DATABASE` en `src/config/env.js`, no `DB_NAME`.
+
+## ▶️ Ejecución local
 
 ```bash
-# Crear la base de datos
-createdb sistema_cursos
-
-# Ejecutar las migraciones (si las tienes)
-# npm run migrate
+node src/server.js
 ```
 
-### 5. Iniciar el servidor
+Luego abre `http://localhost:3000`.
+
+## 🐳 Ejecución con Docker
 
 ```bash
-# Desarrollo
-npm run dev
-
-# Producción
-npm start
+docker compose up --build
 ```
 
-El servidor estará disponible en: `http://localhost:3000`
+El servicio quedará expuesto en `http://localhost:3000`.
+
+## 🧪 Pruebas
+
+Este proyecto usa Jest y Supertest.
+
+```bash
+npm test
+```
 
 ## 📂 Estructura del Proyecto
 
 ```
 src/
-├── config/              # Configuración (BD, variables de entorno)
+├── config/              # Configuración de base de datos y variables de entorno
 ├── controller/          # Lógica de negocio
 │   ├── auth.controller.js
 │   ├── cursos.controller.js
@@ -100,59 +97,58 @@ src/
 │   ├── cursos.repository.js
 │   ├── inscripciones.repository.js
 │   └── usuarios.repository.js
-├── routes/             # Definición de rutas
+├── routes/              # Rutas del API
 │   ├── auth.routes.js
 │   ├── cursos.routes.js
 │   ├── inscripciones.routes.js
 │   └── usuarios.routes.js
-├── schemas/            # Esquemas de validación
+├── schemas/             # Esquemas de validación
 │   ├── curso.schema.js
 │   ├── inscripciones.schema.js
 │   ├── login.schema.js
 │   └── usuario.schema.js
-├── utils/              # Utilidades
+├── utils/               # Constantes y utilidades
 │   └── constants.js
-├── errors/             # Manejo de errores personalizado
+├── errors/              # Manejo de errores personalizado
 │   └── AppError.js
-└── server.js           # Punto de entrada
+└── server.js            # Punto de entrada
 ```
 
 ## 🔌 Endpoints Principales
 
 ### Autenticación
 ```http
-POST   /auth/login        # Iniciar sesión
-POST   /auth/register     # Registrar nuevo usuario
+POST /auth/login    # Iniciar sesión
+POST /auth/register # Registrar nuevo usuario
 ```
 
 ### Usuarios
 ```http
-GET    /usuarios           # Listar todos los usuarios
-GET    /usuarios/:id       # Obtener usuario por ID
-POST   /usuarios           # Crear nuevo usuario
-PUT    /usuarios/:id       # Actualizar usuario
-DELETE /usuarios/:id       # Eliminar usuario
+GET  /usuarios       # Requiere token
+GET  /usuarios/:id   # Requiere token
+POST /usuarios       # Requiere token + rol admin
 ```
 
 ### Cursos
 ```http
-GET    /cursos             # Listar todos los cursos
-GET    /cursos/:id         # Obtener curso por ID
-POST   /cursos             # Crear nuevo curso
-PUT    /cursos/:id         # Actualizar curso
-DELETE /cursos/:id         # Eliminar curso
+GET    /cursos           # Requiere token + rol admin
+GET    /cursos/:id       # Requiere token
+POST   /cursos           # Requiere token + rol admin
+PUT    /cursos/:id       # Requiere token + rol admin
+DELETE /cursos/:id       # Requiere token + rol admin
 ```
 
 ### Inscripciones
 ```http
-GET    /inscripciones      # Listar todas las inscripciones
-POST   /inscripciones      # Crear nueva inscripción
-DELETE /inscripciones/:id  # Cancelar inscripción
+GET    /inscripciones       # Requiere token + rol admin
+GET    /inscripciones/:id   # Requiere token
+POST   /inscripciones       # Requiere token + rol admin
+DELETE /inscripciones/:id   # Requiere token
 ```
 
 ## 📚 Ejemplo de Uso
 
-### 1. Registrarse
+### Registrarse
 
 ```bash
 curl -X POST http://localhost:3000/auth/register \
@@ -160,34 +156,37 @@ curl -X POST http://localhost:3000/auth/register \
   -d '{
     "nombre": "Juan Pérez",
     "email": "juan@example.com",
-    "contraseña": "miContraseña123"
+    "password": "miContraseña123",
+    "rol": "estudiante"
   }'
 ```
 
-### 2. Iniciar Sesión
+### Iniciar sesión
 
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "juan@example.com",
-    "contraseña": "miContraseña123"
+    "password": "miContraseña123"
   }'
 ```
 
-Respuesta:
+Respuesta de ejemplo:
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "usuario": {
     "id": 1,
     "nombre": "Juan Pérez",
-    "email": "juan@example.com"
+    "email": "juan@example.com",
+    "rol": "estudiante"
   }
 }
 ```
 
-### 3. Crear un Curso (con autenticación)
+### Crear un curso (admin)
 
 ```bash
 curl -X POST http://localhost:3000/cursos \
@@ -203,12 +202,12 @@ curl -X POST http://localhost:3000/cursos \
 
 ## 🔐 Seguridad
 
-- Autenticación con JWT
-- Contraseñas encriptadas con bcryptjs
-- Validación de entrada con Joi y Zod
-- Control de acceso basado en roles (RBAC)
-- CORS configurado para dominios específicos
-- Manejo seguro de errores (no expone detalles internos)
+- JWT para autenticación
+- Bcryptjs para cifrado de contraseñas
+- Validación con Joi y Zod
+- Control de acceso basado en roles
+- CORS habilitado
+- Manejo de errores con middleware
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -217,47 +216,26 @@ curl -X POST http://localhost:3000/cursos \
 | Express | ^4.18.2 | Framework web |
 | PostgreSQL | ^8.11.3 | Base de datos |
 | JWT | ^9.0.0 | Autenticación |
-| bcryptjs | ^2.4.3 | Encriptación |
+| bcryptjs | ^2.4.3 | Cifrado de contraseñas |
 | Joi | ^17.9.2 | Validación |
-| Zod | ^3.23.0 | Type-safe validation |
+| Zod | ^3.23.0 | Validación tipo-safe |
 | CORS | ^2.8.5 | Cross-origin requests |
 | dotenv | ^16.6.1 | Variables de entorno |
 | body-parser | ^1.20.2 | Parseo de JSON |
 
-## 🚦 Estados HTTP
+## 📝 Notas
 
-El API utiliza los siguientes códigos de estado:
+- El comando disponible es `node src/server.js`.
+- El script `npm test` ejecuta las pruebas con Jest.
+- El archivo `docker-compose.yml` está listo para levantar la API y PostgreSQL.
+- Asegúrate de usar el header `Authorization: Bearer <token>` en rutas protegidas.
 
-- `200 OK` - Solicitud exitosa
-- `201 Created` - Recurso creado exitosamente
-- `400 Bad Request` - Solicitud inválida
-- `401 Unauthorized` - Autenticación requerida
-- `403 Forbidden` - Acceso denegado
-- `404 Not Found` - Recurso no encontrado
-- `500 Internal Server Error` - Error del servidor
+## 🔧 Consejos de mejora
 
-## 📝 Logs y Debugging
+- Agregar scripts `start` y `dev` en `package.json`.
+- Mantener la documentación de rutas y permisos sincronizada con el código.
+- Añadir un README de configuración de base de datos con los pasos de creación de esquemas.
 
-Para habilitar logs detallados, establece la variable de entorno:
-
-```bash
-NODE_ENV=development
-```
-
-## 🐛 Solución de Problemas
-
-### Error de conexión a base de datos
-- Verifica que PostgreSQL está corriendo
-- Revisa las credenciales en el archivo `.env`
-- Asegúrate que la base de datos existe
-
-### Error 401 - No autorizado
-- Verifica que incluyes el token JWT en el header `Authorization: Bearer <token>`
-- Comprueba que el token no ha expirado
-
-### Error 403 - Acceso denegado
-- Verifica que tu usuario tiene el rol requerido
-- Contacta al administrador para obtener permisos
 
 ## 📖 Variables de Entorno
 
