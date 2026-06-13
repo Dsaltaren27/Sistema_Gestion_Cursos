@@ -1,9 +1,9 @@
-const { AppError } = require('../errors/AppError');
-const cursoRepo = require('../repositories/cursos.repository');
+
+const cursoService = require('../services/cursos.service');
 
 async function getCursos(req, res, next) {
     try {
-        const cursos = await cursoRepo.findAll()
+        const cursos = await cursoService.getCursos()
         res.json({ cursos })
 
     }
@@ -14,13 +14,11 @@ async function getCursos(req, res, next) {
 
 async function getCursoById(req, res, next) {
     try {
-        const curso = await cursoRepo.findById(Number(req.params.id))
-
-        if (!curso) throw new AppError('curso no encontrado', 404)
-        res.json({ curso })
+        const id = Number(req.params.id);
+        const curso = await cursoService.getCursoById(id);
+        res.json({ curso });
     }
     catch (error) {
-
         next(error)
     }
 }
@@ -28,46 +26,35 @@ async function getCursoById(req, res, next) {
 async function createCurso(req, res, next) {
     try {
         const { nombre, descripcion, profesor_id } = req.body;
-
-        const newCurso = await cursoRepo.create(nombre, descripcion, profesor_id);
-        res.status(201).json({ curso: newCurso });
+        const curso = await cursoService.createCurso(nombre, descripcion, profesor_id);
+        res.status(201).json({ curso });
     }
     catch (error) {
         next(error)
     }
-
 }
 
 async function updateCurso(req, res, next) {
     try {
-        const curso = await cursoRepo.findById(Number(req.params.id))
-
-        if (!curso) throw new AppError('curso no encontrado', 404)
-
+        const id = Number(req.params.id);
         const { nombre, descripcion, profesor_id } = req.body;
-        const cursoUpdate = await cursoRepo.update(Number(req.params.id), nombre, descripcion, profesor_id);
-        res.json({ curso: cursoUpdate });
-
+        const curso = await cursoService.updateCurso(id, nombre, descripcion, profesor_id);
+        res.json({ curso });
     }
     catch (error) {
         next(error)
     }
-
 }
 
 async function removeCurso(req, res, next) {
     try {
-        const curso = await cursoRepo.findById(Number(req.params.id))
-        if (!curso) throw new AppError('curso no encontrado', 404)
-        const cursoRemove = await cursoRepo.remove(Number(req.params.id));
-        res.json({ curso: cursoRemove });
-
+        const id = Number(req.params.id);
+        const curso = await cursoService.removeCurso(id);
+        res.json({ curso });
     }
     catch (error) {
-
         next(error)
     }
-
 }
 
 
