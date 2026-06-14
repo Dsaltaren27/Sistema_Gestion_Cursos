@@ -7,9 +7,9 @@ const {CheckRole} = require('../middleware/roles.middleware')
 const { ROLES } = require('../utils/constants');
 
 
-router.get('/', CheckToken, CheckRole(ROLES.ADMIN),getInscripciones);
-router.get('/:id',CheckToken,getInscripcionById);
-router.post('/', CheckToken ,CheckRole(ROLES.ADMIN,ROLES.ESTUDIANTE, ROLES.PROFESOR),validateInscripcion, createInscripcion);
-router.delete('/:id',CheckToken,CheckRole(ROLES.ESTUDIANTE), removeInscripcion);
+router.get('/', CheckToken, CheckRole(ROLES.ADMIN, ROLES.PROFESOR),getInscripciones);
+router.get('/:id',CheckToken,CheckRole(ROLES.ADMIN, ROLES.ESTUDIANTE),getInscripcionById);
+router.post('/', CheckToken ,CheckRole(ROLES.ADMIN,ROLES.ESTUDIANTE),validateInscripcion, createInscripcion);
+router.delete('/:id',CheckToken,CheckRole(ROLES.ADMIN), removeInscripcion);
 
 module.exports = router;

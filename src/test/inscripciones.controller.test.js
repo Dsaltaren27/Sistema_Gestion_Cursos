@@ -14,13 +14,13 @@ test('retorna 200 cuando la inscripción existe', async () => {
 
     inscripcionesServices.getInscripcionById.mockResolvedValue({ id: 1, usuario_id: 2, curso_id: 3 });
 
-    const req = {params: { id: '1'}};
+    const req = {params: { id: '1'}, usuario: { id: 1, rol: 'admin' } };
     const res = {json: jest.fn(),status: jest.fn().mockReturnThis()};
         const next = jest.fn();
 
     await getInscripcionById(req, res, next);
 
-    expect(inscripcionesServices.getInscripcionById).toHaveBeenCalledWith(1);
+    expect(inscripcionesServices.getInscripcionById).toHaveBeenCalledWith(1, { id: 1, rol: 'admin' });
 
     expect(res.json).toHaveBeenCalledWith({
         inscripcion: {

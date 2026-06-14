@@ -1,8 +1,8 @@
-const inscripcionesServices = require('../services/inscripciones.service')
+const inscripcionesService = require('../services/inscripciones.service')
 
 async function getInscripciones(req, res, next) {
     try {
-        const inscripciones = await inscripcionesServices.getInscripciones();
+        const inscripciones = await inscripcionesService.getInscripciones(req.usuario);
         res.json({ inscripciones });
 
     } catch (error) {
@@ -13,7 +13,7 @@ async function getInscripciones(req, res, next) {
 async function getInscripcionById(req, res, next) {
     try {
         const id = Number(req.params.id);
-        const inscripcion = await inscripcionesServices.getInscripcionById(id);
+        const inscripcion = await inscripcionesService.getInscripcionById(id, req.usuario);
         res.json({ inscripcion });
         
     } catch (error) {
@@ -22,8 +22,7 @@ async function getInscripcionById(req, res, next) {
 }
 async function createInscripcion(req, res, next) {
     try {
-        const { usuario_id, curso_id } = req.body;
-        const inscripcion = await inscripcionesServices.createInscripcion(usuario_id, curso_id);
+        const inscripcion = await inscripcionesService.createInscripcion(req.usuario, req.body);
         res.status(201).json({ inscripcion });
 
     } catch (error) {
@@ -34,7 +33,7 @@ async function createInscripcion(req, res, next) {
 async function removeInscripcion(req, res, next) {
     try {
         const id = Number(req.params.id);
-        const inscripcion = await inscripcionesServices.removeInscripcion(id);
+        const inscripcion = await inscripcionesService.removeInscripcion(id);
         res.json({ inscripcion });
 
     }
