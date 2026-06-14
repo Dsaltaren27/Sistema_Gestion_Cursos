@@ -9,10 +9,10 @@ const { AppError } = require('../errors/AppError');
 function CheckUser(req, res, next) {
   const { error, value } = usuarioSchema.validate(req.body, { abortEarly: false });
   if (error) {
-    return res.status(400).json({
-      error: 'Datos inválidos',
-      detalles: error.details.map(d => ({ campo: d.path.join('.'), mensaje: d.message }))
-    });
+
+    const detalles = error.details.map(d => `${d.path.join('.')}: ${d.message}`).join(', ');
+    return next(new AppError(`Datos inválidos: ${detalles}`, 400));
+
   }
 
   req.body = value;
@@ -24,9 +24,9 @@ function validateLogin(req, res, next) {
   const { error } = loginSchema.validate(req.body);
 
   if (error) {
-    return res.status(400).json({
-      error: error.details[0].message
-    });
+
+    return next(new AppError(error.details[0].message, 400))
+
   }
 
   next();
@@ -38,24 +38,22 @@ function validateRegister(req, res, next) {
   const { error } = registerSchema.validate(req.body);
 
   if (error) {
-    return res.status(400).json({
-      error: error.details[0].message
-    });
+
+    return next(new AppError(error.details[0].message, 400));
   }
 
   next();
 
 }
 
-
-
 function validateCurso(req, res, next) {
   const { error, value } = cursoSchema.validate(req.body, { abortEarly: false });
   if (error) {
-    return res.status(400).json({
-      error: 'Datos inválidos',
-      detalles: error.details.map(d => ({ campo: d.path.join('.'), mensaje: d.message }))
-    });
+
+    const detalles = error.details.map(d => `${d.path.join('.')}: ${d.message}`).join(', ');
+    return next(new AppError(`Datos inválidos: ${detalles}`, 400));
+
+
   }
 
   req.body = value;
@@ -64,16 +62,14 @@ function validateCurso(req, res, next) {
 
 function validateInscripcion(req, res, next) {
 
-const { error } = inscripcionSchema.validate(req.body);
+  const { error } = inscripcionSchema.validate(req.body);
 
-if (error) {
-    return res.status(400).json({
-        error: error.details[0].message
-    });
-}
+  if (error) {
+    return next(new AppError(error.details[0].message, 400));
+  }
 
-next();
+  next();
 
 }
 
-module.exports = { CheckUser, validateCurso,validateInscripcion, validateLogin, validateRegister };
+module.exports = { CheckUser, validateCurso, validateInscripcion, validateLogin, validateRegister };

@@ -1,17 +1,17 @@
+const { AppError } = require("../errors/AppError");
+
 function CheckRole(...rolesPermitidos) {
 
     return (req, res, next) => {
 
         if (!req.usuario) {
-            return res.status(401).json({
-                error: 'Usuario no autenticado'
-            });
+
+            return next(new AppError('Usuario no autenticado', 401));
         }
 
         if (!rolesPermitidos.includes(req.usuario.rol)) {
-            return res.status(403).json({
-                error: 'No autorizado'
-            });
+        
+                return next(new AppError('No autorizado', 403));
         }
 
         next();

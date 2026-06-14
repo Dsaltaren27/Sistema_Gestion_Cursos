@@ -10,6 +10,6 @@ const { ROLES } = require('../utils/constants');
 router.get('/', CheckToken, CheckRole(ROLES.ADMIN),getInscripciones);
 router.get('/:id',CheckToken,getInscripcionById);
 router.post('/', CheckToken ,CheckRole(ROLES.ADMIN,ROLES.ESTUDIANTE, ROLES.PROFESOR),validateInscripcion, createInscripcion);
-router.delete('/:id',CheckToken, removeInscripcion);
+router.delete('/:id',CheckToken,CheckRole(ROLES.ESTUDIANTE), removeInscripcion);
 
 module.exports = router;
