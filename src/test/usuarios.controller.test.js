@@ -1,7 +1,8 @@
 const { getUserById } = require('../controller/usuarios.controller');
-const userRepo = require('../repositories/usuarios.repository');
+const userService = require('../services/usuarios.service');
+const { AppError } = require('../errors/AppError');
 
-jest.mock('../repositories/usuarios.repository');
+jest.mock('../services/usuarios.service');
 
 describe('getUserById', () => {
 
@@ -10,7 +11,7 @@ describe('getUserById', () => {
     });
 
   test('retorna 200 y el usuario cuando existe', async () => {
-    userRepo.findById.mockResolvedValue({ id: 1, nombre: 'Ana', email: 'ana@gmail.com' });
+    userService.getUserById.mockResolvedValue({ id: 1, nombre: 'Ana', email: 'ana@gmail.com' });
 
     const req = { params: { id: '1' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -18,7 +19,7 @@ describe('getUserById', () => {
 
     await getUserById(req, res, next);
 
-    expect(userRepo.findById).toHaveBeenCalledWith(1);
+    expect(userService.getUserById).toHaveBeenCalledWith(1);
     expect(res.json).toHaveBeenCalledWith({
       usuario: { id: 1, nombre: 'Ana', email: 'ana@gmail.com' }
     });
@@ -26,7 +27,9 @@ describe('getUserById', () => {
   });
 
   test('llama a next con AppError 404 cuando no existe', async () => {
-    userRepo.findById.mockResolvedValue(undefined);
+    userService.getUserById.mockRejectedValue(
+      new AppError('Usuario no encontrado', 404)
+    );
 
     const req = { params: { id: '999' } };
     const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };

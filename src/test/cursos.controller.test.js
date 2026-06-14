@@ -1,16 +1,17 @@
 const { getCursoById } = require('../controller/cursos.controller');
-const cursoRepo = require('../repositories/cursos.repository');
+const cursoService = require('../services/cursos.service');
+const { AppError } = require('../errors/AppError');
 
-jest.mock('../repositories/cursos.repository');
+jest.mock('../services/cursos.service');
 
-describe('getUserById', () => {
+describe('getCursoById', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     test('retorna 200 y el curso existe', async () => {
-        cursoRepo.findById.mockResolvedValue({ id: 1, curso_nombre: 'JavaScript', descripcion: 'Curso de JS desde cero', profesor_nombre: 'carlos_profesor' });
+        cursoService.getCursoById.mockResolvedValue({ id: 1, curso_nombre: 'JavaScript', descripcion: 'Curso de JS desde cero', profesor_nombre: 'carlos_profesor' });
 
         const req = { params: { id: '1' } };
         const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
@@ -18,7 +19,7 @@ describe('getUserById', () => {
 
         await getCursoById(req, res, next);
 
-        expect(cursoRepo.findById).toHaveBeenCalledWith(1);
+        expect(cursoService.getCursoById).toHaveBeenCalledWith(1);
         expect(res.json).toHaveBeenCalledWith({
             curso: { id: 1, curso_nombre: 'JavaScript', descripcion: 'Curso de JS desde cero', profesor_nombre: 'carlos_profesor' }
         });
@@ -26,7 +27,9 @@ describe('getUserById', () => {
     });
 
     test('llama a next con AppError 404 cuando no existe', async () => {
-        cursoRepo.findById.mockResolvedValue(undefined);
+        cursoService.getCursoById.mockRejectedValue(
+            new AppError('Curso no encontrado', 404)
+        );
 
         const req = { params: { id: '999' } };
         const res = { json: jest.fn(), status: jest.fn().mockReturnThis() };
