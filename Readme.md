@@ -7,7 +7,7 @@ Una API REST para la gestión de cursos, usuarios e inscripciones. Desarrollada 
 - ✅ Autenticación segura con JWT
 - ✅ Control de roles y permisos (admin, profesor, estudiante)
 - ✅ CRUD para usuarios, cursos e inscripciones
-- ✅ Validaciones con Joi y Zod
+- ✅ Validaciones con Joi
 - ✅ Contraseñas cifradas con bcryptjs
 - ✅ Persistencia con PostgreSQL
 - ✅ Manejo de errores centralizado
@@ -17,7 +17,7 @@ Una API REST para la gestión de cursos, usuarios e inscripciones. Desarrollada 
 
 Antes de comenzar, asegúrate de tener instalado:
 
-- Node.js (v14 o superior)
+- Node.js (v18 o superior)
 - npm
 - PostgreSQL
 - Git
@@ -43,21 +43,27 @@ npm install
 Crea un archivo `.env` en la raíz del proyecto con estas variables:
 
 ```env
+PORT=3000
+
 DB_HOST=localhost
 DB_PORT=5432
 DB_DATABASE=gestion_escolar
 DB_USER=postgres
 DB_PASSWORD=root
-PORT=3000
+
 JWT_SECRET=tu_clave_secreta
 ```
-
-> Nota: este proyecto usa `DB_DATABASE` en `src/config/env.js`, no `DB_NAME`.
 
 ## ▶️ Ejecución local
 
 ```bash
-node src/server.js
+npm start
+```
+
+Para desarrollo, con reinicio automático al guardar cambios:
+
+```bash
+npm run dev
 ```
 
 Luego abre `http://localhost:3000`.
@@ -68,11 +74,13 @@ Luego abre `http://localhost:3000`.
 docker compose up --build
 ```
 
+Este comando levanta la API y PostgreSQL juntos. La base de datos se inicializa automáticamente con el esquema y datos de prueba definidos en `init-db/init.sql`.
+
 El servicio quedará expuesto en `http://localhost:3000`.
 
 ## 🧪 Pruebas
 
-Este proyecto usa Jest y Supertest.
+Este proyecto usa Jest.
 
 ```bash
 npm test
@@ -83,17 +91,22 @@ npm test
 ```
 src/
 ├── config/              # Configuración de base de datos y variables de entorno
-├── controller/          # Lógica de negocio
+├── controller/          # Adaptadores HTTP — reciben req/res, llaman a los services
 │   ├── auth.controller.js
 │   ├── cursos.controller.js
 │   ├── inscripciones.controller.js
 │   └── usuarios.controller.js
+├── services/            # Lógica de negocio
+│   ├── auth.service.js
+│   ├── cursos.service.js
+│   ├── inscripciones.service.js
+│   └── usuarios.service.js
 ├── middleware/          # Middlewares de Express
 │   ├── auth.middleware.js
 │   ├── error.middleware.js
 │   ├── roles.middleware.js
 │   └── validation.middleware.js
-├── repositories/        # Acceso a datos
+├── repositories/        # Acceso a datos (SQL)
 │   ├── cursos.repository.js
 │   ├── inscripciones.repository.js
 │   └── usuarios.repository.js
@@ -102,7 +115,7 @@ src/
 │   ├── cursos.routes.js
 │   ├── inscripciones.routes.js
 │   └── usuarios.routes.js
-├── schemas/             # Esquemas de validación
+├── schemas/             # Esquemas de validación (Joi)
 │   ├── curso.schema.js
 │   ├── inscripciones.schema.js
 │   ├── login.schema.js
@@ -111,6 +124,8 @@ src/
 │   └── constants.js
 ├── errors/              # Manejo de errores personalizado
 │   └── AppError.js
+├── test/                # Pruebas con Jest
+├── app.js               # Configuración de Express
 └── server.js            # Punto de entrada
 ```
 
@@ -124,15 +139,15 @@ POST /auth/register # Registrar nuevo usuario
 
 ### Usuarios
 ```http
-GET  /usuarios       # Requiere token
+GET  /usuarios       # Requiere token + rol admin
 GET  /usuarios/:id   # Requiere token
 POST /usuarios       # Requiere token + rol admin
 ```
 
 ### Cursos
 ```http
-GET    /cursos           # Requiere token + rol admin
-GET    /cursos/:id       # Requiere token
+GET    /cursos           # Requiere token + rol admin o profesor
+GET    /cursos/:id       # Requiere token + rol admin, profesor o estudiante
 POST   /cursos           # Requiere token + rol admin
 PUT    /cursos/:id       # Requiere token + rol admin
 DELETE /cursos/:id       # Requiere token + rol admin
@@ -142,8 +157,8 @@ DELETE /cursos/:id       # Requiere token + rol admin
 ```http
 GET    /inscripciones       # Requiere token + rol admin
 GET    /inscripciones/:id   # Requiere token
-POST   /inscripciones       # Requiere token + rol admin
-DELETE /inscripciones/:id   # Requiere token
+POST   /inscripciones       # Requiere token + rol admin, profesor o estudiante
+DELETE /inscripciones/:id   # Requiere token + rol estudiante
 ```
 
 ## 📚 Ejemplo de Uso
@@ -195,8 +210,7 @@ curl -X POST http://localhost:3000/cursos \
   -d '{
     "nombre": "Introducción a Node.js",
     "descripcion": "Aprende los fundamentos de Node.js",
-    "instructor_id": 1,
-    "duracion": 40
+    "profesor_id": 1
   }'
 ```
 
@@ -204,7 +218,7 @@ curl -X POST http://localhost:3000/cursos \
 
 - JWT para autenticación
 - Bcryptjs para cifrado de contraseñas
-- Validación con Joi y Zod
+- Validación con Joi
 - Control de acceso basado en roles
 - CORS habilitado
 - Manejo de errores con middleware
@@ -214,42 +228,32 @@ curl -X POST http://localhost:3000/cursos \
 | Tecnología | Versión | Propósito |
 |-----------|---------|----------|
 | Express | ^4.18.2 | Framework web |
-| PostgreSQL | ^8.11.3 | Base de datos |
-| JWT | ^9.0.0 | Autenticación |
+| PostgreSQL (pg) | ^8.11.3 | Base de datos |
+| jsonwebtoken | ^9.0.0 | Autenticación |
 | bcryptjs | ^2.4.3 | Cifrado de contraseñas |
 | Joi | ^17.9.2 | Validación |
-| Zod | ^3.23.0 | Validación tipo-safe |
 | CORS | ^2.8.5 | Cross-origin requests |
 | dotenv | ^16.6.1 | Variables de entorno |
-| body-parser | ^1.20.2 | Parseo de JSON |
+| Jest | ^30.4.2 | Testing |
 
 ## 📝 Notas
 
-- El comando disponible es `node src/server.js`.
+- El comando para producción es `npm start`; para desarrollo con auto-reload usa `npm run dev`.
 - El script `npm test` ejecuta las pruebas con Jest.
-- El archivo `docker-compose.yml` está listo para levantar la API y PostgreSQL.
+- El archivo `docker-compose.yml` está listo para levantar la API y PostgreSQL, con inicialización automática del esquema.
 - Asegúrate de usar el header `Authorization: Bearer <token>` en rutas protegidas.
-
-## 🔧 Consejos de mejora
-
-- Agregar scripts `start` y `dev` en `package.json`.
-- Mantener la documentación de rutas y permisos sincronizada con el código.
-- Añadir un README de configuración de base de datos con los pasos de creación de esquemas.
-
 
 ## 📖 Variables de Entorno
 
 | Variable | Descripción | Requerida |
 |----------|-------------|-----------|
 | `PORT` | Puerto del servidor | ✅ |
-| `NODE_ENV` | Entorno (development/production) | ✅ |
 | `DB_HOST` | Host de PostgreSQL | ✅ |
 | `DB_PORT` | Puerto de PostgreSQL | ✅ |
 | `DB_USER` | Usuario de BD | ✅ |
 | `DB_PASSWORD` | Contraseña de BD | ✅ |
-| `DB_NAME` | Nombre de la BD | ✅ |
+| `DB_DATABASE` | Nombre de la BD | ✅ |
 | `JWT_SECRET` | Clave secreta JWT | ✅ |
-| `JWT_EXPIRE` | Expiración del token | ❌ |
 
 ## 🤝 Contribuir
 
@@ -268,7 +272,6 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 **Dsaltaren27**
 
 - GitHub: [@Dsaltaren27](https://github.com/Dsaltaren27)
-- Email: tu-email@example.com
 
 ## 📞 Soporte
 
