@@ -1,17 +1,19 @@
 const { AppError } = require('../errors/AppError');
 const inscripRepo = require('../repositories/inscripciones.repository');
+const cursoRepo = require('../repositories/cursos.repository');
+const { ROLES } = require('../utils/constants');
 
 async function getInscripciones(usuario) {
 
-    if(usuario.rol === 'admin'){
+    if(usuario.rol === ROLES.ADMIN){
 
-         return await inscripRepo.findAll();
+         return inscripRepo.findAll();
 
     }
 
-    if(usuario.rol === 'profesor'){
+    if(usuario.rol === ROLES.PROFESOR){
 
-    return await inscripRepo.findByProfesor(usuario.id);
+    return inscripRepo.findByProfesor(usuario.id);
         
     }
 
@@ -19,34 +21,45 @@ async function getInscripciones(usuario) {
 
 }
 
-async function getInscripcionById(id,usuario) {
+async function getInscripcionById(id,usuarioLogueado) {
+
+   console.log("ID SERVICE:", id);
 
     const inscripcion = await inscripRepo.findById(id);
-    if (!inscripcion) throw new AppError('inscripcion no encontrado', 404);
+
+
+    console.log('INSCRIPCION:', inscripcion);
+
+    if (!inscripcion) throw new AppError('Inscripción no encontrado', 404);
 
    
-  if (usuario.rol === 'admin') {
-    return inscripcion;
+  if (
+     usuarioLogueado.rol === ROLES.ESTUDIANTE &&
+    inscripcion.usuario_id !== usuarioLogueado.id
+  ) {
+        throw new AppError('Acceso denegado', 403);
   }
 
-  if (usuario.rol === 'estudiante' && inscripcion.usuario_id === usuario.id) {
     return inscripcion;
-  }
 
 }
 async function createInscripcion(usuario, body) {
 
     let usuario_id;
 
-  if (usuario.rol === 'admin') {
-    usuario_id = body.usuario_id; // admin puede inscribir a cualquiera
-  } else if (usuario.rol === 'estudiante') {
-    usuario_id = usuario.id; // el estudiante SIEMPRE se inscribe a sí mismo
+  if (usuario.rol === ROLES.ADMIN) {
+    usuario_id = body.usuario_id; 
+  } else if (usuario.rol === ROLES.ESTUDIANTE) {
+    usuario_id = usuario.id; 
   } else {
     throw new AppError('No autorizado', 403);
   }
-    
+   
+  
     const curso_id = body.curso_id;
+    const curso = await cursoRepo.findById(curso_id);
+    if (!curso) throw new AppError('Curso no encontrado', 404);
+
 
     const existing = await inscripRepo.findByUsuarioCurso(usuario_id, curso_id);
     if (existing) throw new AppError('El usuario ya está inscrito en este curso', 409);
@@ -56,7 +69,7 @@ async function createInscripcion(usuario, body) {
 
 async function removeInscripcion(id) {
     const inscripcion = await inscripRepo.findById(id)
-    if (!inscripcion) throw new AppError('no hay inscripcion', 404)
+    if (!inscripcion) throw new AppError('Inscripción no encontrada', 404)
     return await inscripRepo.remove(id);
 
 
