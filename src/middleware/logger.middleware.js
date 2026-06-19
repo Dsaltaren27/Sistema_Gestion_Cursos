@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 
 const stream = {
   write: (message) => {
-    logger.info(message.trim());
+     logger.http(message.trim()); 
   }
 };
 
