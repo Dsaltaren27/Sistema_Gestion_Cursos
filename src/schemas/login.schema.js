@@ -31,7 +31,6 @@ const registerSchema = Joi.object({
 
     rol: Joi.string()
         .valid(
-            'admin',
             'profesor',
             'estudiante'
         )
