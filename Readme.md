@@ -1,282 +1,170 @@
-# 📚 Sistema de Gestión de Cursos
+# Sistema de Gestión de Cursos
 
-Una API REST para la gestión de cursos, usuarios e inscripciones. Desarrollada con Node.js y Express, esta solución incluye autenticación JWT, control de roles y validación de datos.
+API REST construida con Node.js + Express para administrar usuarios, cursos e inscripciones, con autenticación JWT, control de acceso por roles (RBAC), validación con Joi y logging estructurado con Winston + Morgan.
 
-## 🚀 Características
+## Stack
 
-- ✅ Autenticación segura con JWT
-- ✅ Control de roles y permisos (admin, profesor, estudiante)
-- ✅ CRUD para usuarios, cursos e inscripciones
-- ✅ Validaciones con Joi
-- ✅ Contraseñas cifradas con bcryptjs
-- ✅ Persistencia con PostgreSQL
-- ✅ Manejo de errores centralizado
-- ✅ Soporte para ejecución con Docker
+- **Runtime:** Node.js 22 (alpine)
+- **Framework:** Express
+- **Base de datos:** PostgreSQL 16
+- **Auth:** JWT (jsonwebtoken) + bcryptjs
+- **Validación:** Joi
+- **Logging:** Winston + winston-daily-rotate-file + Morgan
+- **Testing:** Jest + Supertest
+- **Contenedores:** Docker + Docker Compose
 
-## 📋 Requisitos Previos
+## Arquitectura
 
-Antes de comenzar, asegúrate de tener instalado:
+El proyecto sigue una arquitectura en capas:
 
-- Node.js (v18 o superior)
-- npm
-- PostgreSQL
-- Git
-- Docker y Docker Compose (opcional)
-
-## 🔧 Instalación
-
-### 1. Clonar el repositorio
-
-```bash
-git clone <tu-repositorio>
-cd Sistema_Gestion_Cursos
+```
+Request
+  ↓
+CORS + express.json()
+  ↓
+Morgan (logging HTTP) ──→ Winston
+  ↓
+Auth JWT (CheckToken)
+  ↓
+Roles (CheckRole)
+  ↓
+Validación (Joi)
+  ↓
+Controller
+  ↓
+Service ──────────────→ Winston (eventos de negocio)
+  ↓
+Repository (PostgreSQL)
+  ↓
+Error Middleware Global ─→ Winston (warn 4xx / error 5xx)
 ```
 
-### 2. Instalar dependencias
+Cada capa tiene una única responsabilidad: el controller no toca la base de datos, el service no conoce `req`/`res`, y el repository solo ejecuta queries parametrizadas.
 
-```bash
-npm install
+## Estructura del proyecto
+
+```
+src/
+├── app.js                  # Configuración de Express y middlewares globales
+├── server.js                # Arranque del servidor
+├── config/
+│   ├── db.js                  # Pool de conexión a PostgreSQL
+│   └── env.js                  # Variables de entorno
+├── controller/               # Maneja req/res, delega a services
+├── services/                  # Lógica de negocio
+├── repositories/               # Acceso a datos (queries SQL)
+├── routes/                    # Definición de endpoints
+├── schemas/                   # Esquemas de validación Joi
+├── middleware/
+│   ├── auth.middleware.js         # Verificación de JWT
+│   ├── roles.middleware.js         # Control de acceso por rol
+│   ├── validation.middleware.js     # Validación de body con Joi
+│   ├── logger.middleware.js         # Morgan → Winston (logs HTTP)
+│   └── error.middleware.js           # Manejador de errores global
+├── errors/
+│   └── AppError.js              # Clase de error personalizada
+├── utils/
+│   ├── constants.js               # Roles y constantes
+│   └── logger.js                   # Configuración de Winston
+└── test/                       # Tests de controllers y middleware
 ```
 
-### 3. Configurar variables de entorno
+## Roles y permisos
 
-Crea un archivo `.env` en la raíz del proyecto con estas variables:
+| Rol         | Permisos                                                  |
+|-------------|------------------------------------------------------------|
+| `admin`      | Acceso total: gestiona usuarios, cursos e inscripciones     |
+| `profesor`   | Lectura de cursos e inscripciones de sus cursos               |
+| `estudiante` | Lectura de cursos, gestión de sus propias inscripciones        |
+
+## Logging
+
+El proyecto usa **Winston** como logger central y **Morgan** para capturar logs HTTP, con rotación diaria de archivos vía `winston-daily-rotate-file`.
+
+Los logs se separan en tres streams independientes dentro de `logs/`:
+
+| Archivo                      | Contenido                                            | Retención |
+|--------------------------------|---------------------------------------------------------|-----------|
+| `application-YYYY-MM-DD.log`      | Eventos de negocio (`info`, `warn`): logins, registros | 14 días   |
+| `error-YYYY-MM-DD.log`              | Errores reales no controlados (5xx, excepciones)         | 30 días   |
+| `http-YYYY-MM-DD.log`                | Tráfico HTTP (Morgan): método, URL, status, tiempo         | 7 días    |
+
+El manejador de errores global distingue severidad automáticamente: errores esperados del negocio (4xx, como credenciales inválidas) se registran como `warn`, mientras que errores no controlados o 5xx se registran como `error` con stack trace completo.
+
+En desarrollo (`NODE_ENV !== 'production'`), los logs también se imprimen en consola.
+
+> ⚠️ La carpeta `logs/` está en `.gitignore` y no debe subirse al repositorio.
+
+## Variables de entorno
+
+Crea un archivo `.env` en la raíz con las siguientes variables:
 
 ```env
 PORT=3000
+CLIENT_URL=http://localhost:4200
 
 DB_HOST=localhost
 DB_PORT=5432
 DB_DATABASE=gestion_escolar
 DB_USER=postgres
-DB_PASSWORD=root
+DB_PASSWORD=tu_password
 
 JWT_SECRET=tu_clave_secreta
+NODE_ENV=development
 ```
 
-## ▶️ Ejecución local
+> ⚠️ **Nunca subas el `.env` real al repositorio.** Usa este bloque como plantilla (`.env.example`).
 
-```bash
-npm start
-```
+> ⚠️ Si usas `docker-compose.yml`, verifica que `CLIENT_URL` también esté definido en la sección `environment` del servicio `api` — actualmente no lo está, y la app requiere esa variable para configurar CORS.
 
-Para desarrollo, con reinicio automático al guardar cambios:
+## Instalación y uso
 
-```bash
-npm run dev
-```
-
-Luego abre `http://localhost:3000`.
-
-## 🐳 Ejecución con Docker
+### Con Docker (recomendado)
 
 ```bash
 docker compose up --build
 ```
 
-Este comando levanta la API y PostgreSQL juntos. La base de datos se inicializa automáticamente con el esquema y datos de prueba definidos en `init-db/init.sql`.
+Esto levanta dos contenedores: la API en `localhost:3000` y PostgreSQL en `localhost:5432`, con la base de datos inicializada automáticamente desde `init-db/init.sql`.
 
-El servicio quedará expuesto en `http://localhost:3000`.
+Para detener y limpiar:
+```bash
+docker compose down
+```
 
-## 🧪 Pruebas
+### Local (sin Docker)
 
-Este proyecto usa Jest.
+```bash
+npm install
+npm run dev      # con --watch, recarga automática
+# o
+npm start
+```
+
+> Asegúrate de que no haya un contenedor Docker corriendo en el puerto 3000 al mismo tiempo (`docker compose down` primero).
+
+### Tests
 
 ```bash
 npm test
 ```
 
-## 📂 Estructura del Proyecto
+## Endpoints principales
 
-```
-src/
-├── config/              # Configuración de base de datos y variables de entorno
-├── controller/          # Adaptadores HTTP — reciben req/res, llaman a los services
-│   ├── auth.controller.js
-│   ├── cursos.controller.js
-│   ├── inscripciones.controller.js
-│   └── usuarios.controller.js
-├── services/            # Lógica de negocio
-│   ├── auth.service.js
-│   ├── cursos.service.js
-│   ├── inscripciones.service.js
-│   └── usuarios.service.js
-├── middleware/          # Middlewares de Express
-│   ├── auth.middleware.js
-│   ├── error.middleware.js
-│   ├── roles.middleware.js
-│   └── validation.middleware.js
-├── repositories/        # Acceso a datos (SQL)
-│   ├── cursos.repository.js
-│   ├── inscripciones.repository.js
-│   └── usuarios.repository.js
-├── routes/              # Rutas del API
-│   ├── auth.routes.js
-│   ├── cursos.routes.js
-│   ├── inscripciones.routes.js
-│   └── usuarios.routes.js
-├── schemas/             # Esquemas de validación (Joi)
-│   ├── curso.schema.js
-│   ├── inscripciones.schema.js
-│   ├── login.schema.js
-│   └── usuario.schema.js
-├── utils/               # Constantes y utilidades
-│   └── constants.js
-├── errors/              # Manejo de errores personalizado
-│   └── AppError.js
-├── test/                # Pruebas con Jest
-├── app.js               # Configuración de Express
-└── server.js            # Punto de entrada
-```
+| Método | Ruta                    | Descripción              | Roles permitidos          |
+|--------|----------------------------|------------------------------|------------------------------|
+| POST   | `/auth/login`                | Iniciar sesión                | Público                      |
+| POST   | `/auth/register`              | Registro de usuario             | Público                      |
+| GET    | `/usuarios`                    | Listar usuarios                  | admin                        |
+| GET    | `/usuarios/:id`                  | Obtener usuario                   | Autenticado                  |
+| POST   | `/usuarios`                        | Crear usuario                      | admin                        |
+| GET    | `/cursos`                            | Listar cursos                        | admin, profesor               |
+| GET    | `/cursos/:id`                          | Obtener curso                          | admin, profesor, estudiante    |
+| POST   | `/cursos`                                | Crear curso                              | admin                          |
+| PUT    | `/cursos/:id`                              | Actualizar curso                           | admin                          |
+| DELETE | `/cursos/:id`                                | Eliminar curso                              | admin                          |
+| GET    | `/inscripciones`                               | Listar inscripciones                          | admin, profesor                |
+| GET    | `/inscripciones/:id`                             | Obtener inscripción                            | admin, estudiante                |
+| POST   | `/inscripciones`                                   | Crear inscripción                               | admin, estudiante                |
+| DELETE | `/inscripciones/:id`                                 | Eliminar inscripción                             | admin                            |
 
-## 🔌 Endpoints Principales
-
-### Autenticación
-```http
-POST /auth/login    # Iniciar sesión
-POST /auth/register # Registrar nuevo usuario
-```
-
-### Usuarios
-```http
-GET  /usuarios       # Requiere token + rol admin
-GET  /usuarios/:id   # Requiere token
-POST /usuarios       # Requiere token + rol admin
-```
-
-### Cursos
-```http
-GET    /cursos           # Requiere token + rol admin o profesor
-GET    /cursos/:id       # Requiere token + rol admin, profesor o estudiante
-POST   /cursos           # Requiere token + rol admin
-PUT    /cursos/:id       # Requiere token + rol admin
-DELETE /cursos/:id       # Requiere token + rol admin
-```
-
-### Inscripciones
-```http
-GET    /inscripciones       # Requiere token + rol admin
-GET    /inscripciones/:id   # Requiere token
-POST   /inscripciones       # Requiere token + rol admin, profesor o estudiante
-DELETE /inscripciones/:id   # Requiere token + rol estudiante
-```
-
-## 📚 Ejemplo de Uso
-
-### Registrarse
-
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Juan Pérez",
-    "email": "juan@example.com",
-    "password": "miContraseña123",
-    "rol": "estudiante"
-  }'
-```
-
-### Iniciar sesión
-
-```bash
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "juan@example.com",
-    "password": "miContraseña123"
-  }'
-```
-
-Respuesta de ejemplo:
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "usuario": {
-    "id": 1,
-    "nombre": "Juan Pérez",
-    "email": "juan@example.com",
-    "rol": "estudiante"
-  }
-}
-```
-
-### Crear un curso (admin)
-
-```bash
-curl -X POST http://localhost:3000/cursos \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer tu_token_jwt" \
-  -d '{
-    "nombre": "Introducción a Node.js",
-    "descripcion": "Aprende los fundamentos de Node.js",
-    "profesor_id": 1
-  }'
-```
-
-## 🔐 Seguridad
-
-- JWT para autenticación
-- Bcryptjs para cifrado de contraseñas
-- Validación con Joi
-- Control de acceso basado en roles
-- CORS habilitado
-- Manejo de errores con middleware
-
-## 🛠️ Tecnologías Utilizadas
-
-| Tecnología | Versión | Propósito |
-|-----------|---------|----------|
-| Express | ^4.18.2 | Framework web |
-| PostgreSQL (pg) | ^8.11.3 | Base de datos |
-| jsonwebtoken | ^9.0.0 | Autenticación |
-| bcryptjs | ^2.4.3 | Cifrado de contraseñas |
-| Joi | ^17.9.2 | Validación |
-| CORS | ^2.8.5 | Cross-origin requests |
-| dotenv | ^16.6.1 | Variables de entorno |
-| Jest | ^30.4.2 | Testing |
-
-## 📝 Notas
-
-- El comando para producción es `npm start`; para desarrollo con auto-reload usa `npm run dev`.
-- El script `npm test` ejecuta las pruebas con Jest.
-- El archivo `docker-compose.yml` está listo para levantar la API y PostgreSQL, con inicialización automática del esquema.
-- Asegúrate de usar el header `Authorization: Bearer <token>` en rutas protegidas.
-
-## 📖 Variables de Entorno
-
-| Variable | Descripción | Requerida |
-|----------|-------------|-----------|
-| `PORT` | Puerto del servidor | ✅ |
-| `DB_HOST` | Host de PostgreSQL | ✅ |
-| `DB_PORT` | Puerto de PostgreSQL | ✅ |
-| `DB_USER` | Usuario de BD | ✅ |
-| `DB_PASSWORD` | Contraseña de BD | ✅ |
-| `DB_DATABASE` | Nombre de la BD | ✅ |
-| `JWT_SECRET` | Clave secreta JWT | ✅ |
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu característica (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 👨‍💼 Autor
-
-**Dsaltaren27**
-
-- GitHub: [@Dsaltaren27](https://github.com/Dsaltaren27)
-
-## 📞 Soporte
-
-Si encuentras problemas o tienes sugerencias, abre un issue en el repositorio.
-
----
-
-⭐ Si este proyecto te fue útil, considera darle una estrella en GitHub!
