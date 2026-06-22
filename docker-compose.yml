@@ -4,14 +4,15 @@
     ports:
       - "3000:3000"
     environment:
-      PORT: 3000
-      CLIENT_URL: http://localhost:4200
+      PORT: ${PORT}
+      CLIENT_URL: ${CLIENT_URL}
       DB_HOST: db
-      DB_PORT: 5432
-      DB_DATABASE: gestion_escolar
-      DB_USER: postgres
-      DB_PASSWORD: root
-      JWT_SECRET: clave-secreta-desarrollo
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: development
     depends_on:
       db:
         condition: service_healthy
@@ -19,19 +20,52 @@
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: gestion_escolar
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  flyway:
+    image: flyway/flyway:10-alpine
+    command: >
+      -url=jdbc:postgresql://db:5432/${DB_DATABASE}
+      -user=${DB_USER}
+      -password=${DB_PASSWORD}
+      -connectRetries=10
+      -locations=filesystem:/flyway/sql/V1__create_usuarios.sql,filesystem:/flyway/sql/V2__create_cursos.sql,filesystem:/flyway/sql/V3__create_inscripciones.sql
+      migrate
+    volumes:
+      - ./migrations:/flyway/sql
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [prod]
+
+  flyway-dev:
+    image: flyway/flyway:10-alpine
+    command: >
+      -url=jdbc:postgresql://db:5432/${DB_DATABASE}
+      -user=${DB_USER}
+      -password=${DB_PASSWORD}
+      -connectRetries=10
+      -locations=filesystem:/flyway/sql
+      migrate
+    volumes:
+      - ./migrations:/flyway/sql
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [dev]
+
+
 
 volumes:
   postgres_data:
