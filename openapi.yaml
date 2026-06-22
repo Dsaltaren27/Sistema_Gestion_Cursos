@@ -1,0 +1,643 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Gestión de Cursos
+  version: 1.0.0
+  description: |
+    API REST para gestión de cursos, usuarios e inscripciones.
+    Autenticación mediante JWT Bearer token.
+    Control de acceso por roles: **admin**, **profesor**, **estudiante**.
+    Los endpoints de autenticación tienen rate limiting (10 intentos / 15 min por IP).
+
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+
+tags:
+  - name: Auth
+    description: Registro e inicio de sesión
+  - name: Usuarios
+    description: Gestión de usuarios (solo admin)
+  - name: Cursos
+    description: Gestión de cursos
+  - name: Inscripciones
+    description: Gestión de inscripciones
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Mensaje de error descriptivo
+
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Ana García
+        email:
+          type: string
+          format: email
+          example: ana@correo.com
+        rol:
+          type: string
+          enum: [admin, profesor, estudiante]
+          example: estudiante
+
+    UsuarioConToken:
+      type: object
+      properties:
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    Curso:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        curso_nombre:
+          type: string
+          example: JavaScript Avanzado
+        descripcion:
+          type: string
+          example: Curso de JS desde cero hasta async/await
+        profesor_id:
+          type: integer
+          example: 2
+        profesor_nombre:
+          type: string
+          example: Carlos Ruiz
+
+    Inscripcion:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        usuario_id:
+          type: integer
+          example: 4
+        curso_id:
+          type: integer
+          example: 3
+        usuario_nombre:
+          type: string
+          example: Ana García
+        curso_nombre:
+          type: string
+          example: JavaScript Avanzado
+
+  responses:
+    BadRequest:
+      description: Datos inválidos en el body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Token ausente o inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Sin permisos para este recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Demasiados intentos, rate limit excedido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  # ─────────────────────────────────────────────
+  # AUTH
+  # ─────────────────────────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@email.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: admin123
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar nuevo usuario (solo profesor o estudiante)
+      description: |
+        Registro público. El rol **admin** no está disponible en este endpoint;
+        para crear admins usar `POST /usuarios` con un token de admin.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, email, password, rol]
+              properties:
+                nombre:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: Ana García
+                email:
+                  type: string
+                  format: email
+                  example: ana@correo.com
+                password:
+                  type: string
+                  minLength: 6
+                  maxLength: 50
+                  example: password123
+                rol:
+                  type: string
+                  enum: [profesor, estudiante]
+                  example: estudiante
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioConToken'
+        '400':
+          description: Datos inválidos o rol no permitido (ej. intentar registrar admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: El email ya está registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ─────────────────────────────────────────────
+  # USUARIOS
+  # ─────────────────────────────────────────────
+  /usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Listar todos los usuarios
+      description: Solo accesible para **admin**.
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuarios:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Usuarios]
+      summary: Crear usuario (cualquier rol, incluido admin)
+      description: Solo accesible para **admin**. Es la única vía para crear usuarios con rol admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, email, password, rol]
+              properties:
+                nombre:
+                  type: string
+                  example: Nuevo Admin
+                email:
+                  type: string
+                  format: email
+                  example: nuevo@correo.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: segura123
+                rol:
+                  type: string
+                  enum: [admin, profesor, estudiante]
+                  example: admin
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    $ref: '#/components/schemas/Usuario'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /usuarios/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario por ID
+      description: Accesible para cualquier usuario autenticado.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # CURSOS
+  # ─────────────────────────────────────────────
+  /cursos:
+    get:
+      tags: [Cursos]
+      summary: Listar todos los cursos
+      description: Accesible para **admin** y **profesor**.
+      responses:
+        '200':
+          description: Lista de cursos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cursos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Curso'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Cursos]
+      summary: Crear curso
+      description: Solo **admin**. El `profesor_id` debe corresponder a un usuario con rol profesor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, descripcion, profesor_id]
+              properties:
+                nombre:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: Python para Data Science
+                descripcion:
+                  type: string
+                  example: Introducción a pandas, numpy y visualización
+                profesor_id:
+                  type: integer
+                  example: 2
+      responses:
+        '201':
+          description: Curso creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  curso:
+                    $ref: '#/components/schemas/Curso'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Profesor no encontrado o usuario no es profesor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /cursos/{id}:
+    get:
+      tags: [Cursos]
+      summary: Obtener curso por ID
+      description: Accesible para **admin**, **profesor** y **estudiante**.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '200':
+          description: Curso encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  curso:
+                    $ref: '#/components/schemas/Curso'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Cursos]
+      summary: Actualizar curso
+      description: Solo **admin**.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, descripcion, profesor_id]
+              properties:
+                nombre:
+                  type: string
+                  example: Python Avanzado
+                descripcion:
+                  type: string
+                  example: Descripción actualizada
+                profesor_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Curso actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  curso:
+                    $ref: '#/components/schemas/Curso'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Cursos]
+      summary: Eliminar curso
+      description: Solo **admin**.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '200':
+          description: Curso eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  curso:
+                    $ref: '#/components/schemas/Curso'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # INSCRIPCIONES
+  # ─────────────────────────────────────────────
+  /inscripciones:
+    get:
+      tags: [Inscripciones]
+      summary: Listar inscripciones
+      description: |
+        **admin** ve todas las inscripciones.
+        **profesor** ve solo las inscripciones de sus propios cursos.
+      responses:
+        '200':
+          description: Lista de inscripciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inscripciones:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inscripcion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Inscripciones]
+      summary: Crear inscripción
+      description: |
+        **admin** puede inscribir a cualquier usuario (especificando `usuario_id`).
+        **estudiante** solo puede inscribirse a sí mismo (se ignora `usuario_id` del body, se usa el del token).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [curso_id]
+              properties:
+                usuario_id:
+                  type: integer
+                  description: Requerido solo si el solicitante es admin
+                  example: 4
+                curso_id:
+                  type: integer
+                  example: 3
+      responses:
+        '201':
+          description: Inscripción creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inscripcion:
+                    $ref: '#/components/schemas/Inscripcion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Curso no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: El usuario ya está inscrito en este curso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /inscripciones/{id}:
+    get:
+      tags: [Inscripciones]
+      summary: Obtener inscripción por ID
+      description: |
+        **estudiante** solo puede ver su propia inscripción (403 si no le pertenece).
+        **admin** puede ver cualquiera.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: Inscripción encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inscripcion:
+                    $ref: '#/components/schemas/Inscripcion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Inscripciones]
+      summary: Eliminar inscripción
+      description: Solo **admin**.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: Inscripción eliminada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inscripcion:
+                    $ref: '#/components/schemas/Inscripcion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
